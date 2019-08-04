@@ -15,7 +15,8 @@ QUERY_IAS_PRODUCTION=0
 # Your Service Provider ID. This should be a 32-character hex string.
 # [REQUIRED]
 
-SPID=00000000000000000000000000000000
+# Sandeep's SPID
+SPID=54A3F7C5AA5E9AB16442896AED08797E
 
 
 # Set to a non-zero value if this SPID is associated with linkable 
@@ -48,7 +49,7 @@ USE_PLATFORM_SERVICES=0
 
 # Your IAS client certificate file. [REQUIRED]
 
-IAS_CLIENT_CERT_FILE=/path/to/certificate.pem
+IAS_CLIENT_CERT_FILE=/home/sandeep/Desktop/keys/selfsigned.crt
 
 
 # Your IAS client key file.
@@ -81,7 +82,7 @@ IAS_CLIENT_CERT_TYPE=
 # when you apply for access to SGX Developer Services at 
 # http://software.intel.com/sgx [REQUIRED]
 
-IAS_REPORT_SIGNING_CA_FILE=/path/to/IASReportSigningCACert.pem
+IAS_REPORT_SIGNING_CA_FILE=/home/sandeep/Desktop/RK_PUB/AttestationReportSigningCACert.pem
 
 
 # Set to the URL for your proxy server to force the use of a proxy
@@ -116,5 +117,5 @@ VERBOSE=1
 
 # Set to non-zero for debugging output
 
-DEBUG=0
+DEBUG=1
 
