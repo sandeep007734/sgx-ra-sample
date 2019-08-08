@@ -1,0 +1,3 @@
+LD_PRELOAD=/home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-perf-iitd/build/lib/liblogger.so ./sp -s 86A239B44FCA4C94B52AE0EE812E6457 -i fc63f41280c14d14a9f0e0d38ce38c40 -j ea854164c62e4d09bc6dfaf4e4c3a6fd -A /home/sandeep/Desktop/RK_PUB/AttestationReportSigningCACert.pem -N bd71c6380ef77c5417e8b2d1ce2d4b6504b9f418e5049342440cfff2443d95bd -V 1 -R 0
+
+LD_PRELOAD=/home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-perf-iitd/build/lib/liblogger.so ./client -s 86A239B44FCA4C94B52AE0EE812E6457 -r
