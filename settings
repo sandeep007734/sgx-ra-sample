@@ -16,7 +16,11 @@ QUERY_IAS_PRODUCTION=0
 # [REQUIRED]
 
 # Sandeep's SPID
-SPID=54A3F7C5AA5E9AB16442896AED08797E
+# In the mail
+#SPID=54A3F7C5AA5E9AB16442896AED08797E
+
+# Dev Unlinkabe
+SPID=86A239B44FCA4C94B52AE0EE812E6457
 
 
 # Set to a non-zero value if this SPID is associated with linkable 
@@ -51,12 +55,12 @@ USE_PLATFORM_SERVICES=0
 # More Info: https://api.portal.trustedservices.intel.com/EPID-attestation
 # Associated SPID above is required
 
-IAS_PRIMARY_SUBSCRIPTION_KEY=94b4392c88374313b9121f424628a8f5
+IAS_PRIMARY_SUBSCRIPTION_KEY=fc63f41280c14d14a9f0e0d38ce38c40
 
 # Intel Attestation Service  Secondary Subscription Key
 # This will be used in case the primary subscription key does not work
 
-IAS_SECONDARY_SUBSCRIPTION_KEY=14140bbde86840ccadcf1a4439789e51
+IAS_SECONDARY_SUBSCRIPTION_KEY=ea854164c62e4d09bc6dfaf4e4c3a6fd
 
 # The Intel IAS SGX Report Signing CA file. You are sent this certificate
 # when you apply for access to SGX Developer Services at 
@@ -75,7 +79,7 @@ IAS_REPORT_SIGNING_CA_FILE=/home/sandeep/Desktop/RK_PUB/AttestationReportSigning
 # direct connection when communicating with IAS (overriding any
 # environment variables).
 
-IAS_DISABLE_PROXY=1
+IAS_DISABLE_PROXY=0
 
 #======================================================================
 # Debugging options
