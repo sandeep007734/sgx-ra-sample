@@ -62,7 +62,7 @@ static uint32_t buffer_size = MSGIO_BUFFER_SZ;
 
 MsgIO::MsgIO()
 {
-	use_stdio = true;
+	use_stdio = false;
 	s= -1;
 	ls= -1;
 }
@@ -364,7 +364,8 @@ again:
 			perror("send");
 			return;
 		}
-		fwrite(wbuffer.c_str(), 1, bsent, stdout);
+		//skdon uncomment this to print the key on the screen.
+		// fwrite(wbuffer.c_str(), 1, bsent, stdout);
 
 		if ( bsent == len ) {
 			wbuffer.clear();

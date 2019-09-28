@@ -52,7 +52,7 @@ using namespace std;
 #include "quote_size.h"
 
 #define MAX_LEN 80
-
+#define SEALED_KEY_FILE_NAME     "sealed_key.bin"
 
 # define _rdrand64_step(x) ({ unsigned char err; asm volatile("rdrand %0; setc %1":"=r"(*x), "=qm"(err)); err; })
 
@@ -124,29 +124,8 @@ int main (int argc, char *argv[])
 	char have_spid= 0;
 	char flag_stdio= 0;
 
-	/* Create a logfile to capture debug output and actual msg data */
-	fplog = create_logfile("client.log");
-	dividerWithText(fplog, "Client Log Timestamp");
-
-	const time_t timeT = time(NULL);
-	struct tm lt, *ltp;
 
 
-	ltp = localtime(&timeT);
-	if ( ltp == NULL ) {
-		perror("localtime");
-		return 1;
-	}
-	lt= *ltp;
-
-	fprintf(fplog, "%4d-%02d-%02d %02d:%02d:%02d\n", 
-		lt.tm_year + 1900, 
-		lt.tm_mon + 1, 
-		lt.tm_mday,  
-		lt.tm_hour, 
-		lt.tm_min, 
-		lt.tm_sec);
-	divider(fplog);
 
 
 	memset(&config, 0, sizeof(config));
@@ -154,22 +133,10 @@ int main (int argc, char *argv[])
 
 	static struct option long_opt[] =
 	{
-		{"help",		no_argument,		0, 'h'},		
 		{"debug",		no_argument,		0, 'd'},
-		{"epid-gid",	no_argument,		0, 'e'},
-		{"pse-manifest",
-						no_argument,    	0, 'm'},
-		{"nonce",		required_argument,	0, 'n'},
-		{"nonce-file",	required_argument,	0, 'N'},
 		{"rand-nonce",	no_argument,		0, 'r'},
 		{"spid",		required_argument,	0, 's'},
-		{"spid-file",	required_argument,	0, 'S'},
-		{"linkable",	no_argument,		0, 'l'},
-		{"pubkey",		optional_argument,	0, 'p'},
-		{"pubkey-file",	required_argument,	0, 'P'},
-		{"quote",		no_argument,		0, 'q'},
 		{"verbose",		no_argument,		0, 'v'},
-		{"stdio",		no_argument,		0, 'z'},
 		{ 0, 0, 0, 0 }
 	};
 
@@ -186,86 +153,6 @@ int main (int argc, char *argv[])
 
 		switch(c) {
 		case 0:
-			break;
-		case 'N':
-			if ( ! from_hexstring_file((unsigned char *) &config.nonce,
-					optarg, 16)) {
-
-				fprintf(stderr, "nonce must be 32-byte hex string\n");
-				exit(1);
-			}
-			SET_OPT(config.flags, OPT_NONCE);
-
-			break;
-		case 'P':
-			if ( ! key_load_file(&service_public_key, optarg, KEY_PUBLIC) ) {
-				fprintf(stderr, "%s: ", optarg);
-				crypto_perror("key_load_file");
-				exit(1);
-			} 
-
-			if ( ! key_to_sgx_ec256(&config.pubkey, service_public_key) ) {
-				fprintf(stderr, "%s: ", optarg);
-				crypto_perror("key_to_sgx_ec256");
-				exit(1);
-			}
-			SET_OPT(config.flags, OPT_PUBKEY);
-
-			break;
-		case 'S':
-			if ( ! from_hexstring_file((unsigned char *) &config.spid,
-					optarg, 16)) {
-
-				fprintf(stderr, "SPID must be 32-byte hex string\n");
-				exit(1);
-			}
-			++have_spid;
-
-			break;
-		case 'd':
-			debug= 1;
-			break;
-		case 'e':
-			config.mode= MODE_EPID;
-			break;
-		case 'l':
-			SET_OPT(config.flags, OPT_LINK);
-			break;
-		case 'm':
-			SET_OPT(config.flags, OPT_PSE);
-			break;
-		case 'n':
-			if ( strlen(optarg) < 32 ) {
-				fprintf(stderr, "nonce must be 32-byte hex string\n");
-				exit(1);
-			}
-			if ( ! from_hexstring((unsigned char *) &config.nonce,
-					(unsigned char *) optarg, 16) ) {
-
-				fprintf(stderr, "nonce must be 32-byte hex string\n");
-				exit(1);
-			}
-
-			SET_OPT(config.flags, OPT_NONCE);
-
-			break;
-		case 'p':
-			if ( ! from_hexstring((unsigned char *) keyin,
-					(unsigned char *) optarg, 64)) {
-
-				fprintf(stderr, "key must be 128-byte hex string\n");
-				exit(1);
-			}
-
-			/* Reverse the byte stream to make a little endien style value */
-			for(i= 0; i< 32; ++i) config.pubkey.gx[i]= keyin[31-i];
-			for(i= 0; i< 32; ++i) config.pubkey.gy[i]= keyin[63-i];
-
-			SET_OPT(config.flags, OPT_PUBKEY);
-
-			break;
-		case 'q':
-			config.mode = MODE_QUOTE;
 			break;
 		case 'r':
 			for(i= 0; i< 2; ++i) {
@@ -297,11 +184,6 @@ int main (int argc, char *argv[])
 		case 'v':
 			verbose= 1;
 			break;
-		case 'z':
-			flag_stdio= 1;
-			break;
-		case 'h':
-		case '?':
 		default:
 			usage();
 		}
@@ -312,15 +194,15 @@ int main (int argc, char *argv[])
 
 	/* Remaining argument is host[:port] */
 
-	if ( flag_stdio && argc ) usage();
-	else if ( !flag_stdio && ! argc ) {
-		// Default to localhost
-		config.server= strdup("localhost");
-		if ( config.server == NULL ) {
-			perror("malloc");
-			return 1;
-		}
-	} else if ( argc ) {
+	// if ( flag_stdio && argc ) usage();
+	// else if ( !flag_stdio && ! argc ) {
+	// 	// Default to localhost
+	// 	config.server= strdup("localhost");
+	// 	if ( config.server == NULL ) {
+	// 		perror("malloc");
+	// 		return 1;
+	// 	}
+	// } else if ( argc ) {
 		char *cp;
 
 		config.server= strdup(argv[optind]);
@@ -335,7 +217,7 @@ int main (int argc, char *argv[])
 			*cp++= '\0';
 			config.port= cp;
 		}
-	}
+	// }
 
 	if ( ! have_spid && config.mode != MODE_EPID ) {
 		fprintf(stderr, "SPID required. Use one of --spid or --spid-file \n");
@@ -346,29 +228,16 @@ int main (int argc, char *argv[])
 
 #ifndef SGX_HW_SIM
 	sgx_support = get_sgx_support();
-	if (sgx_support & SGX_SUPPORT_NO) {
-		fprintf(stderr, "This system does not support Intel SGX.\n");
+	if(sgx_support!=3){
+		std::cerr<<"There is somethinig wrong with the SGX config"<<std::endl;
 		return 1;
-	} else {
-		if (sgx_support & SGX_SUPPORT_ENABLE_REQUIRED) {
-			fprintf(stderr, "Intel SGX is supported on this system but disabled in the BIOS\n");
-			return 1;
-		}
-		else if (sgx_support & SGX_SUPPORT_REBOOT_REQUIRED) {
-			fprintf(stderr, "Intel SGX will be enabled after the next reboot\n");
-			return 1;
-		}
-		else if (!(sgx_support & SGX_SUPPORT_ENABLED)) {
-			fprintf(stderr, "Intel SGX is supported on this sytem but not available for use\n");
-			fprintf(stderr, "The system may lock BIOS support, or the Platform Software is not available\n");
-			return 1;
-		}
-	} 
+	}
+#else
+	std::cout<<	"We are running in SIMULATION mode"<<std::endl;
 #endif
 
 	/* Launch the enclave */
-
-
+	cout<<"Launging the enclave"<<endl;
 	status = sgx_create_enclave_search(ENCLAVE_NAME,
 		SGX_DEBUG_FLAG, &token, &updated, &eid, 0);
 	if ( status != SGX_SUCCESS ) {
@@ -380,13 +249,71 @@ int main (int argc, char *argv[])
 	}
 
 
-	/* Are we attesting, or just spitting out a quote? */
+	sgx_ra_context_t ra_ctx = do_attestation(eid, &config);
+	int enclaveTrusted = Trusted;
+	// valid after attestation
+	// sgx_status_t status, sgxrv, pse_status;
+	// sgx_ra_context_t ra_ctx= 0xaabcde;
+	if ( enclaveTrusted == Trusted || enclaveTrusted == Trusted_ItsComplicated) {
+		sgx_status_t key_status, sha_status;
+		sgx_sha256_hash_t mkhash, skhash;
 
-	do_attestation(eid, &config);
+		status= enclave_ra_get_key_hash(eid, &sha_status, &key_status, ra_ctx,
+			SGX_RA_KEY_MK, &mkhash);
+		status= enclave_ra_get_key_hash(eid, &sha_status, &key_status, ra_ctx,
+			SGX_RA_KEY_SK, &skhash);
 
+		if ( verbose ) {
+			eprintf("SHA256(MK) = ");
+			print_hexstring(stderr, mkhash, sizeof(mkhash));
+			eprintf("\n");
+			eprintf("SHA256(SK) = ");
+			print_hexstring(stderr, skhash, sizeof(skhash));
+			eprintf("\n");
+		}
+
+ 		size_t sealed_blob_size = 0;
+		status = ecall_get_sealed_blob_size(eid, &sealed_blob_size);
+        if (status != SGX_SUCCESS || UINT32_MAX == sealed_blob_size)
+        {
+            printf("ecall_get_sealed_blob_size: ret = %d, sealed_blob_size = %ld\n", status, sealed_blob_size);
+            sgx_destroy_enclave(eid);
+            return status;
+        }
+        cout<<"Size is: "<<sealed_blob_size<<endl;
+
+ 		uint8_t* sealed_blob = NULL;
+        sealed_blob = new uint8_t[sealed_blob_size];
+        sgx_status_t gret = SGX_ERROR_UNEXPECTED;
+
+        // If this call is successful, then the sealed_blob contains the final sealed blob.
+        status = ecall_generate_sealed_blob(eid, &gret, sealed_blob, sealed_blob_size, ra_ctx);
+        if ((SGX_SUCCESS != status) || (SGX_SUCCESS != gret)) 
+        {
+            printf("ecall_generate_sealed_blob: ret = %d, gret = 0x%x\n", status, gret);
+            sgx_destroy_enclave(eid);
+            delete sealed_blob;
+            return status;
+        }
+
+        // close when youa re done
+		enclave_ra_close(eid, &status, ra_ctx);
+		FILE *fsealp = fopen(SEALED_KEY_FILE_NAME, "rb");
+		fsealp = fopen(SEALED_KEY_FILE_NAME, "wb");
+        if(NULL != fsealp)
+        {
+            fwrite(sealed_blob, 1, sealed_blob_size, fsealp);
+            fclose(fsealp);
+        }
+
+     }else{ 	
+		cout<<"Enclave is NOT trusted."<<endl;
+		// close when youa re done
+	enclave_ra_close(eid, &status, ra_ctx);
+	}
+
+	
      
-	close_logfile(fplog);
-
 	return 0;
 }
 
@@ -397,20 +324,19 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	sgx_ra_msg1_t msg1;
 	sgx_ra_msg2_t *msg2 = NULL;
 	sgx_ra_msg3_t *msg3 = NULL;
-	ra_msg4_t *msg4 = NULL;
+	ra_msg4_t *msg4 = NULL;	
+
 	uint32_t msg0_extended_epid_group_id = 0;
 	uint32_t msg3_sz;
+
 	uint32_t flags= config->flags;
-	sgx_ra_context_t ra_ctx= 0xdeadbeef;
+	sgx_ra_context_t ra_ctx= 0xaabcde;
 	int rv;
 	MsgIO *msgio;
 	size_t msg4sz = 0;
 	int enclaveTrusted = NotTrusted; // Not Trusted
 	int b_pse= OPT_ISSET(flags, OPT_PSE);
 
-	if ( config->server == NULL ) {
-		msgio = new MsgIO();
-	} else {
 		try {
 			msgio = new MsgIO(config->server, (config->port == NULL) ?
 				DEFAULT_PORT : config->port);
@@ -418,7 +344,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		catch(...) {
 			exit(1);
 		}
-	}
 
 	/*
 	 * WARNING! Normally, the public key would be hardcoded into the
@@ -446,17 +371,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		fprintf(stderr, "enclave_ra_init: %08x\n", status);
 		delete msgio;
 		return 1;
-	}
-
-	/* If we asked for a PSE session, did that succeed? */
-	if (b_pse) {
-		if ( pse_status != SGX_SUCCESS ) {
-			fprintf(stderr, "pse_session: %08x\n", sgxrv);
-			delete msgio;
-			return 1;
-		}
-	}else{
-		cerr<<"We did not asked for a PSE session"<<endl;
 	}
 
 	/* Did sgx_ra_init() succeed? */
@@ -502,11 +416,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	 * amount of time generating keys that won't be used.
 	 */
 
-	// dividerWithText(fplog, "Msg0||Msg1 ==> SP");
-	// fsend_msg_partial(fplog, &msg0_extended_epid_group_id,
-	// 	sizeof(msg0_extended_epid_group_id));
-	// fsend_msg(fplog, &msg1, sizeof(msg1));
-	// divider(fplog);
 
 	// dividerWithText(stderr, "Copy/Paste Msg0||Msg1 Below to SP");
 	 msgio->send_partial(&msg0_extended_epid_group_id,
@@ -552,22 +461,13 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	if ( status != SGX_SUCCESS ) {
 		enclave_ra_close(eid, &sgxrv, ra_ctx);
 		fprintf(stderr, "sgx_ra_proc_msg2: %08x\n", status);
-		fprintf(fplog, "sgx_ra_proc_msg2: %08x\n", status);
 
 		delete msgio;
 		return 1;
 	} 
 
-	
 
-	dividerWithText(stderr, "Copy/Paste Msg3 Below to SP");
 	msgio->send(msg3, msg3_sz);
-	divider(stderr);
-
-	dividerWithText(fplog, "Msg3 ==> SP");
-	fsend_msg(fplog, msg3, msg3_sz);
-	divider(fplog);
-
 	if ( msg3 ) {
 		free(msg3);
 		msg3 = NULL;
@@ -609,105 +509,20 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		eprintf("Enclave Trust is NOT TRUSTED and COMPLICATED. The client is out of date.\n");
 	}
 
-	/* check to see if we have a PIB by comparing to empty PIB */
-	sgx_platform_info_t emptyPIB;
-	memset(&emptyPIB, 0, sizeof (sgx_platform_info_t));
-
-	int retPibCmp = memcmp(&emptyPIB, (void *)(&msg4->platformInfoBlob), sizeof (sgx_platform_info_t));
-
-	if (retPibCmp == 0 ) {
-		if ( verbose ) eprintf("A Platform Info Blob (PIB) was NOT provided by the IAS\n");
-	} else {
-		if ( verbose ) eprintf("A Platform Info Blob (PIB) was provided by the IAS\n");
-
-		if ( debug )  {
-			eprintf("+++ PIB: " );
-			print_hexstring(stderr, &msg4->platformInfoBlob, sizeof (sgx_platform_info_t));
-			print_hexstring(fplog, &msg4->platformInfoBlob, sizeof (sgx_platform_info_t));
-			eprintf("\n");
-		}
-
-		/* We have a PIB, so check to see if there are actions to take */
-		sgx_update_info_bit_t update_info;
-		sgx_status_t ret = sgx_report_attestation_status(&msg4->platformInfoBlob, 
-			enclaveTrusted, &update_info);
-
-		if ( debug )  eprintf("+++ sgx_report_attestation_status ret = 0x%04x\n", ret);
-
-		edivider();
-
-		/* Check to see if there is an update needed */
-		if ( ret == SGX_ERROR_UPDATE_NEEDED ) {
-
-			edividerWithText("Platform Update Required");
-			eprintf("The following Platform Update(s) are required to bring this\n");
-			eprintf("platform's Trusted Computing Base (TCB) back into compliance:\n\n");
-			if( update_info.pswUpdate ) {
-				eprintf("  * Intel SGX Platform Software needs to be updated to the latest version.\n");
-			}
-
-			if( update_info.csmeFwUpdate ) {
-				eprintf("  * The Intel Management Engine Firmware Needs to be Updated.  Contact your\n");
-				eprintf("    OEM for a BIOS Update.\n");
-			}
-
-			if( update_info.ucodeUpdate )  {
-				eprintf("  * The CPU Microcode needs to be updated.  Contact your OEM for a platform\n");
-				eprintf("    BIOS Update.\n");
-			}                                           
-			eprintf("\n");
-			edivider();      
-		}
-	}
-
+	
 	/*
 	 * If the enclave is trusted, fetch a hash of the the MK and SK from
 	 * the enclave to show proof of a shared secret with the service 
 	 * provider.
 	 */
 
-	if ( enclaveTrusted == Trusted || enclaveTrusted == Trusted_ItsComplicated) {
-		sgx_status_t key_status, sha_status;
-		sgx_sha256_hash_t mkhash, skhash;
-
-		// First the MK
-
-		if ( debug ) eprintf("+++ fetching SHA256(MK)\n");
-		status= enclave_ra_get_key_hash(eid, &sha_status, &key_status, ra_ctx,
-			SGX_RA_KEY_MK, &mkhash);
-		if ( debug ) eprintf("+++ ECALL enclage_ra_get_key_hash (MK) ret= 0x%04x\n",
-			status);
-
-		if ( debug ) eprintf("+++ sgx_ra_get_keys (MK) ret= 0x%04x\n", key_status);
-		// Then the SK
-
-		if ( debug ) eprintf("+++ fetching SHA256(SK)\n");
-		status= enclave_ra_get_key_hash(eid, &sha_status, &key_status, ra_ctx,
-			SGX_RA_KEY_SK, &skhash);
-		if ( debug ) eprintf("+++ ECALL enclage_ra_get_key_hash (MK) ret= 0x%04x\n",
-			status);
-
-		if ( debug ) eprintf("+++ sgx_ra_get_keys (MK) ret= 0x%04x\n", key_status);
-		if ( verbose ) {
-			eprintf("SHA256(MK) = ");
-			print_hexstring(stderr, mkhash, sizeof(mkhash));
-			print_hexstring(fplog, mkhash, sizeof(mkhash));
-			eprintf("\n");
-			eprintf("SHA256(SK) = ");
-			print_hexstring(stderr, skhash, sizeof(skhash));
-			print_hexstring(fplog, skhash, sizeof(skhash));
-			eprintf("\n");
-		}
-	}else{
-		cout<<"Enclave is NOT trusted."<<endl;
-	}
+	
 
 	free (msg4);
-
-	enclave_ra_close(eid, &sgxrv, ra_ctx);
+	// enclave_ra_close(eid, &sgxrv, ra_ctx);
 	delete msgio;
 
-	return 0;
+	return ra_ctx;
 }
 
 
@@ -733,30 +548,7 @@ sgx_status_t sgx_create_enclave_search (const char *filename, const int edebug,
 	if ( stat(filename, &sb) == 0 )
 		return sgx_create_enclave(filename, edebug, token, updated, eid, attr);
 
-	/* Search the paths in LD_LBRARY_PATH */
-
-	if ( file_in_searchpath(filename, getenv("LD_LIBRARY_PATH"), epath, PATH_MAX) )
-		return sgx_create_enclave(epath, edebug, token, updated, eid, attr);
-		
-	/* Search the paths in DT_RUNPATH */
-
-	if ( file_in_searchpath(filename, getenv("DT_RUNPATH"), epath, PATH_MAX) )
-		return sgx_create_enclave(epath, edebug, token, updated, eid, attr);
-
-	/* Standard system library paths */
-
-	if ( file_in_searchpath(filename, DEF_LIB_SEARCHPATH, epath, PATH_MAX) )
-		return sgx_create_enclave(epath, edebug, token, updated, eid, attr);
-
-	/*
-	 * If we've made it this far then we don't know where else to look.
-	 * Just call sgx_create_enclave() which assumes the enclave is in
-	 * the current working directory. This is almost guaranteed to fail,
-	 * but it will insure we are consistent about the error codes that
-	 * get reported to the calling function.
-	 */
-
-	return sgx_create_enclave(filename, edebug, token, updated, eid, attr);
+	return SGX_ERROR_UNEXPECTED;
 }
 
 int file_in_searchpath (const char *file, const char *search, char *fullpath, 
@@ -805,31 +597,15 @@ int file_in_searchpath (const char *file, const char *search, char *fullpath,
 
 void usage () 
 {
-	fprintf(stderr, "usage: client [ options ] [ host[:port] ]\n\n");
-	fprintf(stderr, "Required:\n");
-	fprintf(stderr, "  -N, --nonce-file=FILE    Set a nonce from a file containing a 32-byte\n");
-	fprintf(stderr, "                             ASCII hex string\n");
-	fprintf(stderr, "  -P, --pubkey-file=FILE   File containing the public key of the service\n");
-	fprintf(stderr, "                             provider.\n");
-	fprintf(stderr, "  -S, --spid-file=FILE     Set the SPID from a file containing a 32-byte\n");
-	fprintf(stderr, "                             ASCII hex string\n");
-	fprintf(stderr, "  -d, --debug              Show debugging information\n");
-	fprintf(stderr, "  -e, --epid-gid           Get the EPID Group ID instead of performing\n");
-	fprintf(stderr, "                             an attestation.\n");
-	fprintf(stderr, "  -l, --linkable           Specify a linkable quote (default: unlinkable)\n");
-	fprintf(stderr, "  -m, --pse-manifest       Include the PSE manifest in the quote\n");
-	fprintf(stderr, "  -n, --nonce=HEXSTRING    Set a nonce from a 32-byte ASCII hex string\n");
-	fprintf(stderr, "  -p, --pubkey=HEXSTRING   Specify the public key of the service provider\n");
-	fprintf(stderr, "                             as an ASCII hex string instead of using the\n");
-	fprintf(stderr, "                             default.\n");
-	fprintf(stderr, "  -q                       Generate a quote instead of performing an\n");
-	fprintf(stderr, "                             attestation.\n");
-	fprintf(stderr, "  -r                       Generate a nonce using RDRAND\n");
-	fprintf(stderr, "  -s, --spid=HEXSTRING     Set the SPID from a 32-byte ASCII hex string\n");
-	fprintf(stderr, "  -v, --verbose            Print decoded RA messages to stderr\n");
-	fprintf(stderr, "  -z                       Read from stdin and write to stdout instead\n");
-	fprintf(stderr, "                             connecting to a server.\n");
-	fprintf(stderr, "\nOne of --spid OR --spid-file is required for generating a quote or doing\nremote attestation.\n");
-	exit(1);
 }
+
+/* OCall functions */
+void ocall_print_string(const char *str)
+{
+    /* Proxy/Bridge will check the length and null-terminate 
+     * the input string to prevent buffer overflow. 
+     */
+    printf("%s", str);
+}
+
 

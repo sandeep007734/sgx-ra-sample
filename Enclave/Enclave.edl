@@ -50,12 +50,18 @@ enclave {
 
 		public sgx_status_t enclave_ra_close(sgx_ra_context_t ctx);
 
+		//--------
+		public size_t ecall_get_sealed_blob_size ();
+		public sgx_status_t ecall_generate_sealed_blob (
+			[out, count=sealed_blob_size]uint8_t* sealed_blob,
+			size_t sealed_blob_size,sgx_ra_context_t ctx );
+		public sgx_status_t provision_key_mock ([user_check]uint8_t* key_ptr, uint32_t key_len,sgx_ra_context_t ctx );
+
 	};
 
 	untrusted {
-#ifndef _WIN32
 		include "config.h"
-#endif
+		void ocall_print_string([in, string] const char *str);
 	};
 };
 

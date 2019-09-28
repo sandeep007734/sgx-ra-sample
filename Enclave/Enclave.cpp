@@ -15,16 +15,23 @@ in the License.
 
 */
 
-#ifndef _WIN32
 #include "../config.h"
-#endif
 #include "Enclave_t.h"
+
+#include <stdarg.h>
+#include <stdio.h>   
+
+#include <sgx_tseal.h>
+// #include <memory>
+#include <sgx_pcl_guid.h>
+
 #include <string.h>
 #include <sgx_utils.h>
 #include <sgx_tae_service.h>
 #include <sgx_tkey_exchange.h>
 #include <sgx_tcrypto.h>
 
+// #define SGX_AESGCM_KEY_SIZE 128
 static const sgx_ec256_public_t def_service_public_key = {
     {
         0x72, 0x12, 0x8a, 0x7a, 0x17, 0x52, 0x6e, 0xbf,
@@ -179,7 +186,7 @@ sgx_status_t enclave_ra_get_key_hash(sgx_status_t *get_keys_ret,
 		(sgx_sha256_hash_t *) hash); // Sigh.
 
 	/* Let's be thorough */
-
+	//clear the keys
 	memset(k, 0, sizeof(k));
 
 	return sha_ret;
@@ -191,3 +198,103 @@ sgx_status_t enclave_ra_close(sgx_ra_context_t ctx)
         ret = sgx_ra_close(ctx);
         return ret;
 }
+
+void printf(const char *fmt, ...)
+{
+    char buf[BUFSIZ] = {'\0'};
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, ap);
+    va_end(ap);
+    ocall_print_string(buf);
+}
+
+
+//----------------------
+sgx_status_t provision_key_mock (uint8_t* key_ptr, uint32_t key_len,sgx_ra_context_t ctx )
+{
+
+	sgx_status_t sha_ret;
+	sgx_ra_key_128_t k;
+
+	// First get the requested key which is one of:
+	//  * SGX_RA_KEY_MK 
+	//  * SGX_RA_KEY_SK
+	// per sgx_ra_get_keys().
+	sgx_ra_key_type_t type = SGX_RA_KEY_SK;
+	sgx_status_t get_keys_ret;
+	get_keys_ret= sgx_ra_get_keys(ctx, type, &k);
+	if ( get_keys_ret != SGX_SUCCESS ) return get_keys_ret;
+
+
+    // if ( (NULL == key_ptr) || (SGX_AESGCM_KEY_SIZE != key_len))
+    // {
+    //     return SGX_ERROR_INVALID_PARAMETER;
+    // }
+    // const uint8_t key[SGX_AESGCM_KEY_SIZE] = 
+        // { 0x21, 0x22, 0x33, 0x33, 0x44, 0x44, 0x55, 0x55, 0x66, 0x66, 0x77, 0x77, 0x88, 0x88, 0x99, 0x99 };
+      printf("Main key: 0x%x\n",k );
+      // printf("Fake key%x\n",key );
+    
+    memcpy (key_ptr, k, SGX_AESGCM_KEY_SIZE);
+    return SGX_SUCCESS;
+}
+
+sgx_status_t provision_key( uint8_t* key_ptr, uint32_t key_len,sgx_ra_context_t ctx )
+{
+    /* 
+     * ISV must replace call to provision_key_mock with an alternative ISV's secured key provisioning scheme, e.g. using remote attestation & TLS.
+     * For more details, see 'Intel(R) SGX PCL Linux User Guide.pdf', chapter 'Integration with PCL', sub chapter 'Sealing Enclave'.
+     */
+    return provision_key_mock(key_ptr, key_len, ctx);
+}
+
+extern "C" 
+{
+
+/*
+ * @func ecall_get_sealed_blob_size returns the PCL sealed blob size
+ * @return size_t, size of PCL sealed blob size in bytes
+ */
+size_t ecall_get_sealed_blob_size()
+{
+    return (size_t)sgx_calc_sealed_data_size ( SGX_PCL_GUID_SIZE, SGX_AESGCM_KEY_SIZE );
+}
+
+/*
+ * @func ecall_generate_sealed_blob generates the sealed blob
+ * @param uint8_t* sealed_blob is the resulting sealed blob
+ * @param uint32_t sealed_blob_size is sealed blob size in bytes
+ * @return sgx_status_t
+ * SGX_ERROR_INVALID_PARAMETER if sealed_blob is NULL or if sealed_blob_size does not match PCL sealed blob size
+ * The respective error in case provision_key  or sgx_seal_data fail
+ * SGX_SUCCESS if function passes
+ */
+sgx_status_t ecall_generate_sealed_blob(uint8_t* sealed_blob, size_t sealed_blob_size, sgx_ra_context_t ctx)
+{
+    if ((NULL == sealed_blob) || (ecall_get_sealed_blob_size() != sealed_blob_size))
+    {
+        return SGX_ERROR_INVALID_PARAMETER;
+    }
+    sgx_status_t retstatus = SGX_ERROR_UNEXPECTED;
+    uint8_t key[SGX_AESGCM_KEY_SIZE] = { 0 };
+    	
+    retstatus = provision_key(key, SGX_AESGCM_KEY_SIZE,ctx);
+    if (retstatus != SGX_SUCCESS )
+    {
+        return retstatus;
+    }
+    
+    retstatus = sgx_seal_data (
+        SGX_PCL_GUID_SIZE,                 // AAD size
+        g_pcl_guid,                        // AAD
+        SGX_AESGCM_KEY_SIZE,               // Key len
+        key,                               // Key
+        (uint32_t)sealed_blob_size,                  // Resulting blob size
+        (sgx_sealed_data_t*)sealed_blob ); // Resulting blob
+
+    memset(key, 0,SGX_AESGCM_KEY_SIZE); 
+    return retstatus;
+}
+
+}; 
