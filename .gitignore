@@ -1,3 +1,16 @@
+*.o
+*.so
+*.log*
+*.deps
+sp
+client
+*_t*
+*_u*
+*cache*	
+autom4te*
+
+*.db
+
 sp.log
 client.log
 install-sh

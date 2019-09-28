@@ -34,7 +34,7 @@ using namespace httpparser;
 
 static vector<string> wget_args;
 
-extern int debug, verbose;
+// extern int debug, verbose;
 
 #define CHUNK_SZ 8192
 #define WGET_NO_ERROR		0
@@ -99,7 +99,7 @@ retry_write:
 
 		// Output options
 
-		if ( ! verbose ) wget_args.push_back("--quiet");
+		// if ( ! verbose ) wget_args.push_back("--quiet");
 		wget_args.push_back("--output-document=-");
 		wget_args.push_back("--save-headers");
 		wget_args.push_back("--content-on-error");
@@ -167,7 +167,7 @@ retry_write:
 
 		// Create the argument list
 
-		if ( debug ) eprintf("+++ Exec:");
+		// if ( debug ) eprintf("+++ Exec:");
 		argv= (char **) malloc(sizeof(char *)*(sz+1));
 		if ( argv == NULL ) {
 			perror("malloc");
@@ -179,10 +179,10 @@ retry_write:
 				perror("strdup");
 				exit(1);
 			}
-			if ( debug ) eprintf(" %s", argv[i]);
+			// if ( debug ) eprintf(" %s", argv[i]);
 		}
 		argv[sz]= 0;
-		if ( debug ) eprintf("\n");
+		// if ( debug ) eprintf("\n");
 
 retry_dup:
 		/* Dup stdout onto our pipe */

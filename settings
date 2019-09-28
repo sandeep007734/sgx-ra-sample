@@ -66,20 +66,20 @@ IAS_SECONDARY_SUBSCRIPTION_KEY=ea854164c62e4d09bc6dfaf4e4c3a6fd
 # when you apply for access to SGX Developer Services at 
 # http://software.intel.com/sgx [REQUIRED]
 
-IAS_REPORT_SIGNING_CA_FILE=/home/sandeep/Desktop/RK_PUB/AttestationReportSigningCACert.pem
+IAS_REPORT_SIGNING_CA_FILE=/home/sandeep/Desktop/intel_sgx_keys/RK_PUB/AttestationReportSigningCACert.pem
 
 
 # Set to the URL for your proxy server to force the use of a proxy
 # when communicating with IAS (overriding any environment variables).
 
-# IAS_PROXY_URL=
+IAS_PROXY_URL=http://10.10.78.61:3128
 
 
 # Set to non-zero to disable the use of a proxy server and force a
 # direct connection when communicating with IAS (overriding any
 # environment variables).
 
-IAS_DISABLE_PROXY=0
+IAS_DISABLE_PROXY=1
 
 #======================================================================
 # Debugging options

@@ -304,7 +304,7 @@ again:
 		if ( bread > 0 ) {
 			size_t idx;
 
-			if ( debug ) eprintf("+++ read %ld bytes from socket\n", bread);
+			// if ( debug ) eprintf("+++ read %ld bytes from socket\n", bread);
 			rbuffer.append(lbuffer, bread);
 			idx= rbuffer.find("\r\n");
 			if ( idx == string::npos ) {
@@ -326,12 +326,12 @@ again:
 				return -1;
 			}
 
-			if (debug) {
-				edividerWithText("read buffer");
-				fwrite(rbuffer.c_str(), 1, idx, stdout);
-				printf("\n");
-				edivider();
-			}
+			// if (debug) {
+			// 	edividerWithText("read buffer");
+			// 	fwrite(rbuffer.c_str(), 1, idx, stdout);
+			// 	printf("\n");
+			// 	edivider();
+			// }
 
 			from_hexstring((unsigned char *) *dest, rbuffer.c_str(), idx/2);
 			rbuffer.erase(0, idx+ws);
@@ -460,11 +460,11 @@ int read_msg(void **dest, size_t *sz)
 	*dest = malloc(bread / 2);
 	if (*dest == NULL) return -1;
 
-	if (debug) {
-		edividerWithText("read buffer");
-		eputs(buffer);
-		edivider();
-	}
+	// if (debug) {
+	// 	edividerWithText("read buffer");
+	// 	eputs(buffer);
+	// 	edivider();
+	// }
 
 	from_hexstring((unsigned char *) *dest, buffer, bread / 2);
 

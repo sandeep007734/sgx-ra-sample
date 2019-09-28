@@ -64,10 +64,10 @@ int AgentCurl::initialize ()
 	curl= curl_easy_init();
 	if ( curl == NULL ) return 0;
 
-	if ( debug ) {
-		if ( curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L) != CURLE_OK )
-			return 0;
-	}
+	// if ( debug ) {
+	// 	if ( curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L) != CURLE_OK )
+	// 		return 0;
+	// }
 
 	// General client configuration options
 	//------------------------------------------------------------

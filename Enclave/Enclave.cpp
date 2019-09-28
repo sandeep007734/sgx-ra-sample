@@ -79,11 +79,11 @@ static const sgx_ec256_public_t def_service_public_key = {
 
 sgx_status_t get_report(sgx_report_t *report, sgx_target_info_t *target_info)
 {
-#ifdef SGX_HW_SIM
-	return sgx_create_report(NULL, NULL, report);
-#else
+// #ifdef SGX_HW_SIM
+// 	return sgx_create_report(NULL, NULL, report);
+// #else
 	return sgx_create_report(target_info, NULL, report);
-#endif
+// #endif
 }
 
 size_t get_pse_manifest_size ()
