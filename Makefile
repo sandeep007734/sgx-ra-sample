@@ -1038,6 +1038,7 @@ Enclave/Enclave.signed.so:
 	make -C Enclave
 
 server: sp
+	@echo "Making server"
 
 policy: mrsigner policy.in Enclave.signed.so
 	$(SGX_SIGN) dump -cssfile enclave_sigstruct_raw -dumpfile /dev/null -enclave Enclave.signed.so
