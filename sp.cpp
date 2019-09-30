@@ -16,9 +16,7 @@ in the License.
 */
 
 
-#ifndef _WIN32
 #include "config.h"
-#endif
 
 #include <stdlib.h>
 #include <limits.h>
@@ -26,15 +24,10 @@ in the License.
 #include <sys/stat.h>
 #include <string.h>
 #include <sys/types.h>
-#ifdef _WIN32
-#include <intrin.h>
-#include <openssl/applink.c>
-#include "win32/getopt.h"
-#else
+
 #include <signal.h>
 #include <getopt.h>
 #include <unistd.h>
-#endif
 #include <sgx_key_exchange.h>
 #include <sgx_report.h>
 #include <openssl/evp.h>
@@ -61,9 +54,6 @@ using namespace std;
 #include <iostream>
 #include <algorithm>
 
-#ifdef _WIN32
-#define strdup(x) _strdup(x)
-#endif
 
 static const unsigned char def_service_private_key[32] = {
 	0x90, 0xe7, 0x6c, 0xbb, 0x2d, 0x52, 0xa1, 0xce,
@@ -103,10 +93,7 @@ typedef struct config_struct {
 	int allow_debug_enclave;
 } config_t;
 
-// void usage();
-#ifndef _WIN32
 void cleanup_and_exit(int signo);
-#endif
 
 int derive_kdk(EVP_PKEY *Gb, unsigned char kdk[16], sgx_ec256_public_t g_a,
 	config_t *config);
@@ -156,38 +143,19 @@ int main(int argc, char *argv[])
 	static struct option long_opt[] =
 	{
 		{"ias-signing-cafile",		required_argument,	0, 'A'},
-		{"ca-bundle",				required_argument,	0, 'B'},
 		{"no-debug-enclave",		no_argument,		0, 'D'},
-		{"list-agents",				no_argument,		0, 'G'},
-		{"ias-pri-api-key-file",	required_argument,	0, 'I'},
-		{"ias-sec-api-key-file",	required_argument,	0, 'J'},
-		{"service-key-file",		required_argument,	0, 'K'},
 		{"mrsigner",				required_argument,  0, 'N'},
-		{"production",				no_argument,		0, 'P'},
 		{"isv-product-id",			required_argument,	0, 'R'},
-		{"spid-file",				required_argument,	0, 'S'},
 		{"min-isv-svn",				required_argument,  0, 'V'},
-		{"strict-trust-mode",		no_argument,		0, 'X'},
 		{"debug",					no_argument,		0, 'd'},
-		{"user-agent",				required_argument,	0, 'g'},
-		{"help",					no_argument, 		0, 'h'},
 		{"ias-pri-api-key",			required_argument,	0, 'i'},
 		{"ias-sec-api-key",			required_argument,	0, 'j'},
-		{"key",						required_argument,	0, 'k'},
-		{"linkable",				no_argument,		0, 'l'},
-		{"proxy",					required_argument,	0, 'p'},
-		{"api-version",				required_argument,	0, 'r'},
 		{"spid",					required_argument,	0, 's'},
 		{"verbose",					no_argument,		0, 'v'},
-		{"no-proxy",				no_argument,		0, 'x'},
-		{"stdio",					no_argument,		0, 'z'},
 		{ 0, 0, 0, 0 }
 	};
 
 	/* Create a logfile to capture debug output and actual msg data */
-
-	fplog = create_logfile("sp.log");
-	fprintf(fplog, "Server log started\n");
 
 	/* Config defaults */
 
@@ -229,8 +197,6 @@ int main(int argc, char *argv[])
 
 			break;
 
-		
-
 	
 		case 'N':
 			from_hexstring((unsigned char *)&config.req_mrsigner,
@@ -252,8 +218,7 @@ int main(int argc, char *argv[])
 			config.min_isvsvn= val;
 			++flag_min_isvsvn;
 			break;
-
-		
+	
 
 		case 'i':
 			strncpy((char *) config.pri_subscription_key, optarg, IAS_SUBSCRIPTION_KEY_SIZE);
@@ -412,16 +377,9 @@ int main(int argc, char *argv[])
 	 	* portion and the array portion by hand.
 	 	*/
 
-		dividerWithText(stderr, "Copy/Paste Msg2 Below to Client");
-		dividerWithText(fplog, "Msg2 (send to Client)");
-
+		
 		msgio->send_partial((void *) &msg2, sizeof(sgx_ra_msg2_t));
-		fsend_msg_partial(fplog, (void *) &msg2, sizeof(sgx_ra_msg2_t));
-
 		msgio->send(&msg2.sig_rl, msg2.sig_rl_size);
-		fsend_msg(fplog, &msg2.sig_rl, msg2.sig_rl_size);
-
-		edivider();
 
 		/* Read message 3, and generate message 4 */
 
@@ -516,49 +474,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 	}
 	q= (sgx_quote_t *) msg3->quote;
 
-	// if ( verbose ) {
-
-	// 	edividerWithText("Msg3 Details (from Client)");
-	// 	eprintf("msg3.mac                 = %s\n",
-	// 		hexstring(&msg3->mac, sizeof(msg3->mac)));
-	// 	eprintf("msg3.g_a.gx              = %s\n",
-	// 		hexstring(msg3->g_a.gx, sizeof(msg3->g_a.gx)));
-	// 	eprintf("msg3.g_a.gy              = %s\n",
-	// 		hexstring(&msg3->g_a.gy, sizeof(msg3->g_a.gy)));
-	// 	eprintf("msg3.ps_sec_prop         = %s\n",
-	// 		hexstring(&msg3->ps_sec_prop, sizeof(msg3->ps_sec_prop)));
-	// 	eprintf("msg3.quote.version       = %s\n",
-	// 		hexstring(&q->version, sizeof(uint16_t)));
-	// 	eprintf("msg3.quote.sign_type     = %s\n",
-	// 		hexstring(&q->sign_type, sizeof(uint16_t)));
-	// 	eprintf("msg3.quote.epid_group_id = %s\n",
-	// 		hexstring(&q->epid_group_id, sizeof(sgx_epid_group_id_t)));
-	// 	eprintf("msg3.quote.qe_svn        = %s\n",
-	// 		hexstring(&q->qe_svn, sizeof(sgx_isv_svn_t)));
-	// 	eprintf("msg3.quote.pce_svn       = %s\n",
-	// 		hexstring(&q->pce_svn, sizeof(sgx_isv_svn_t)));
-	// 	eprintf("msg3.quote.xeid          = %s\n",
-	// 		hexstring(&q->xeid, sizeof(uint32_t)));
-	// 	eprintf("msg3.quote.basename      = %s\n",
-	// 		hexstring(&q->basename, sizeof(sgx_basename_t)));
-	// 	eprintf("msg3.quote.report_body   = %s\n",
-	// 		hexstring(&q->report_body, sizeof(sgx_report_body_t)));
-	// 	eprintf("msg3.quote.signature_len = %s\n",
-	// 		hexstring(&q->signature_len, sizeof(uint32_t)));
-	// 	eprintf("msg3.quote.signature     = %s\n",
-	// 		hexstring(&q->signature, q->signature_len));
-
-	// 	edividerWithText("Enclave Quote (base64) ==> Send to IAS");
-
-	// 	eputs(b64quote);
-
-	// 	eprintf("\n");
-	// 	edivider();
-	// }
-
 	/* Verify that the EPID group ID in the quote matches the one from msg1 */
-
-	
 
 	if ( memcmp(msg1->gid, &q->epid_group_id, sizeof(sgx_epid_group_id_t)) ) {
 		eprintf("EPID GID mismatch. Attestation failed.\n");
@@ -602,13 +518,6 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 
 		sha256_digest(msg_rdata, 144, vfy_rdata);
 
-		// if ( verbose ) {
-		// 	edividerWithText("Enclave Report Verification");
-		// 	eprintf("SHA256(Ga||Gb||VK) = %s\n",
-		// 		hexstring(vfy_rdata, 32));
-		// 	eprintf("report_data[64]    = %s\n",
-		// 		hexstring(&r->report_data, 64));
-		// }
 
 		if ( CRYPTO_memcmp((void *) vfy_rdata, (void *) &r->report_data,
 			64) ) {
@@ -634,7 +543,6 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		 * is compiled.
 		 */
 
-#ifndef _WIN32
 /* Windows implementation is not available yet */
 
 		if ( ! verify_enclave_identity(config->req_mrsigner, 
@@ -644,45 +552,17 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			eprintf("Invalid enclave.\n");
 			msg4->status= NotTrusted;
 		}
-#endif
 
-		// if ( verbose ) {
-		// 	edivider();
 
 		// 	// The enclave report is valid so we can trust the report
 		// 	// data.
-
-		// 	edividerWithText("Enclave Report Details");
-
-		// 	eprintf("cpu_svn     = %s\n",
-		// 		hexstring(&r->cpu_svn, sizeof(sgx_cpu_svn_t)));
-		// 	eprintf("misc_select = %s\n",
-		// 		hexstring(&r->misc_select, sizeof(sgx_misc_select_t)));
-		// 	eprintf("attributes  = %s\n",
-		// 		hexstring(&r->attributes, sizeof(sgx_attributes_t)));
-		// 	eprintf("mr_enclave  = %s\n",
-		// 		hexstring(&r->mr_enclave, sizeof(sgx_measurement_t)));
-		// 	eprintf("mr_signer   = %s\n",
-		// 		hexstring(&r->mr_signer, sizeof(sgx_measurement_t)));
-		// 	eprintf("isv_prod_id = %04hX\n", r->isv_prod_id);
-		// 	eprintf("isv_svn     = %04hX\n", r->isv_svn);
-		// 	eprintf("report_data = %s\n",
-		// 		hexstring(&r->report_data, sizeof(sgx_report_data_t)));
-		// }
-
-
-		edividerWithText("Copy/Paste Msg4 Below to Client"); 
 
 		/* Serialize the members of the Msg4 structure independently */
 		/* vs. the entire structure as one send_msg() */
 
 		msgio->send_partial(&msg4->status, sizeof(msg4->status));
 		msgio->send(&msg4->platformInfoBlob, sizeof(msg4->platformInfoBlob));
-
-		fsend_msg_partial(fplog, &msg4->status, sizeof(msg4->status));
-		fsend_msg(fplog, &msg4->platformInfoBlob,
-			sizeof(msg4->platformInfoBlob));
-		edivider();
+		
 
 		/*
 		 * If the enclave is trusted, derive the MK and SK. Also get
@@ -690,7 +570,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		 * secret between us and the client.
 		 */
 
-		if ( msg4->status == Trusted ) {
+		if ( msg4->status == Trusted || msg4->status==Trusted_ItsComplicated ) {
 			unsigned char hashmk[32], hashsk[32];
 
 			cmac128(session->kdk, (unsigned char *)("\x01MK\x00\x80\x00"),
@@ -701,10 +581,9 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			sha256_digest(session->mk, 16, hashmk);
 			sha256_digest(session->sk, 16, hashsk);
 
-			// if ( verbose ) {
-			// 	eprintf("SHA256(MK) = %s\n", hexstring(hashmk, 32));
-			// 	eprintf("SHA256(SK) = %s\n", hexstring(hashsk, 32));
-			// }
+				eprintf("SHA256(MK) = %s\n", hexstring(hashmk, 32));
+				eprintf("SHA256(SK) = %s\n", hexstring(hashsk, 32));
+				 printf("Main key: 0x%x\n",session->sk );
 		}
 
 	} else {
@@ -757,10 +636,10 @@ int process_msg01 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 	}
 
 	// if ( verbose ) {
-	// 	edividerWithText("Msg0 Details (from Client)");
+	
 	// 	eprintf("msg0.extended_epid_group_id = %u\n",
 	// 		 msg01->msg0_extended_epid_group_id);
-	// 	edivider();
+	
 	// }
 
 	/* According to the Intel SGX Developer Reference
@@ -779,14 +658,14 @@ int process_msg01 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 	memcpy(msg1, &msg01->msg1, sizeof(sgx_ra_msg1_t));
 
 	// if ( verbose ) {
-	// 	edividerWithText("Msg1 Details (from Client)");
+	
 	// 	eprintf("msg1.g_a.gx = %s\n",
 	// 		hexstring(&msg1->g_a.gx, sizeof(msg1->g_a.gx)));
 	// 	eprintf("msg1.g_a.gy = %s\n",
 	// 		hexstring(&msg1->g_a.gy, sizeof(msg1->g_a.gy)));
 	// 	eprintf("msg1.gid    = %s\n",
 	// 		hexstring( &msg1->gid, sizeof(msg1->gid)));
-	// 	edivider();
+	
 	// }
 
 	/* Generate our session key */
@@ -897,7 +776,7 @@ int process_msg01 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		(unsigned char *) &msg2->mac);
 
 	// if ( verbose ) {
-	// 	edividerWithText("Msg2 Details");
+	
 	// 	eprintf("msg2.g_b.gx      = %s\n",
 	// 		hexstring(&msg2->g_b.gx, sizeof(msg2->g_b.gx)));
 	// 	eprintf("msg2.g_b.gy      = %s\n",
@@ -914,7 +793,7 @@ int process_msg01 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 	// 		hexstring(&msg2->mac, sizeof(msg2->mac)));
 	// 	eprintf("msg2.sig_rl_size = %s\n",
 	// 		hexstring(&msg2->sig_rl_size, sizeof(msg2->sig_rl_size)));
-	// 	edivider();
+	
 	// }
 
 	free(msg01);
@@ -1054,22 +933,22 @@ int get_attestation_report(IAS_Connection *ias, int version,
 		JSON reportObj = JSON::Load(content);
 
 		// if ( verbose ) {
-		// 	edividerWithText("Report Body");
+		
 		// 	eprintf("%s\n", content.c_str());
-		// 	edivider();
+		
 		// 	if ( messages.size() ) {
-		// 		edividerWithText("IAS Advisories");
+		
 		// 		for (vector<string>::const_iterator i = messages.begin();
 		// 			i != messages.end(); ++i ) {
 
 		// 			eprintf("%s\n", i->c_str());
 		// 		}
-		// 		edivider();
+		
 		// 	}
 		// }
 
 		// if ( verbose ) {
-		// 	edividerWithText("IAS Report - JSON - Required Fields");
+		
 		// 	if ( version >= 3 ) {
 		// 		eprintf("version               = %d\n",
 		// 			reportObj["version"].ToInt());
@@ -1083,7 +962,7 @@ int get_attestation_report(IAS_Connection *ias, int version,
 		// 	eprintf("isvEnclaveQuoteBody   = %s\n",
 		// 		reportObj["isvEnclaveQuoteBody"].ToString().c_str());
 
-		// 	edividerWithText("IAS Report - JSON - Optional Fields");
+		
 
 		// 	eprintf("platformInfoBlob  = %s\n",
 		// 		reportObj["platformInfoBlob"].ToString().c_str());
@@ -1097,7 +976,7 @@ int get_attestation_report(IAS_Connection *ias, int version,
 		// 		reportObj["nonce"].ToString().c_str());
 		// 	eprintf("epidPseudonym     = %s\n",
 		// 		reportObj["epidPseudonym"].ToString().c_str());
-		// 	edivider();
+		
 		// }
 
     /*
@@ -1147,7 +1026,7 @@ int get_attestation_report(IAS_Connection *ias, int version,
 
 	memset(msg4, 0, sizeof(ra_msg4_t));
 
-	// if ( verbose ) edividerWithText("ISV Enclave Trust Status");
+	
 
 	if ( !(reportObj["isvEnclaveQuoteStatus"].ToString().compare("OK"))) {
 		msg4->status = Trusted;

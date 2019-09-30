@@ -263,14 +263,12 @@ int main (int argc, char *argv[])
 		status= enclave_ra_get_key_hash(eid, &sha_status, &key_status, ra_ctx,
 			SGX_RA_KEY_SK, &skhash);
 
-		if ( verbose ) {
 			eprintf("SHA256(MK) = ");
 			print_hexstring(stderr, mkhash, sizeof(mkhash));
 			eprintf("\n");
 			eprintf("SHA256(SK) = ");
 			print_hexstring(stderr, skhash, sizeof(skhash));
 			eprintf("\n");
-		}
 
  		size_t sealed_blob_size = 0;
 		status = ecall_get_sealed_blob_size(eid, &sealed_blob_size);
