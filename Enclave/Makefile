@@ -197,7 +197,7 @@ AM_DEFAULT_VERBOSITY = 1
 AUTOCONF = ${SHELL} /home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-ra-sample/missing autoconf
 AUTOHEADER = ${SHELL} /home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-ra-sample/missing autoheader
 AUTOMAKE = ${SHELL} /home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-ra-sample/missing automake-1.15
-AWK = mawk
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2

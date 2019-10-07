@@ -116,7 +116,7 @@ then
 		"$@"
 elif [ "$PROG" = "run-server" ]
 then
-echo	./sp \
+	./sp \
 		-s $SPID \
 		-i $IAS_PRIMARY_SUBSCRIPTION_KEY \
 		-j $IAS_SECONDARY_SUBSCRIPTION_KEY \
