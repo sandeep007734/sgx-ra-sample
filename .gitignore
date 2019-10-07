@@ -12,6 +12,7 @@ client
 *_u*
 *cache*	
 autom4te*
+*.Po
 
 *.db
 
