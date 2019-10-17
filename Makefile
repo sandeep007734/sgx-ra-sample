@@ -87,7 +87,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = client$(EXEEXT) sp$(EXEEXT) mrsigner$(EXEEXT)
-am__append_1 = includes/agent_curl.cpp
+am__append_1 = agent_curl.cpp
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/sgx_init.m4 \
@@ -120,11 +120,11 @@ mrsigner_OBJECTS = $(am_mrsigner_OBJECTS)
 mrsigner_DEPENDENCIES =
 mrsigner_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(mrsigner_LDFLAGS) $(LDFLAGS) -o $@
-am__sp_SOURCES_DIST = sp.cpp includes/agent_wget.cpp iasrequest.cpp \
+am__sp_SOURCES_DIST = sp.cpp agent_wget.cpp iasrequest.cpp \
 	enclave_verify.c byteorder.c common.cpp crypto.c hexutil.c \
-	fileio.c base64.c msgio.cpp logfile.c includes/agent_curl.cpp
-am__objects_2 = includes/agent_curl.$(OBJEXT)
-am_sp_OBJECTS = sp.$(OBJEXT) includes/agent_wget.$(OBJEXT) iasrequest.$(OBJEXT) \
+	fileio.c base64.c msgio.cpp logfile.c agent_curl.cpp
+am__objects_2 = agent_curl.$(OBJEXT)
+am_sp_OBJECTS = sp.$(OBJEXT) agent_wget.$(OBJEXT) iasrequest.$(OBJEXT) \
 	enclave_verify.$(OBJEXT) $(am__objects_1) $(am__objects_2)
 sp_OBJECTS = $(am_sp_OBJECTS)
 sp_DEPENDENCIES =
@@ -142,7 +142,7 @@ AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I. -Iincludes
+DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -265,7 +265,7 @@ am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
 ACLOCAL = ${SHELL} /home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-ra-sample/missing aclocal-1.15
-AGENT_CURL_SRC = includes/agent_curl.cpp
+AGENT_CURL_SRC = agent_curl.cpp
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AUTOCONF = ${SHELL} /home/sandeep/Desktop/work/phd/intel_sgx_related/sgx-ra-sample/missing autoconf
@@ -413,7 +413,7 @@ nodist_client_SOURCES = Enclave_u.c Enclave_u.h
 EXTRA_client_DEPENDENCIES = Enclave.signed.so
 BUILT_SOURCES = Enclave_u.c Enclave_u.h policy
 client_LDFLAGS = $(AM_LDFLAGS) 
-sp_SOURCES = sp.cpp includes/agent_wget.cpp iasrequest.cpp enclave_verify.c \
+sp_SOURCES = sp.cpp agent_wget.cpp iasrequest.cpp enclave_verify.c \
 	$(common) $(am__append_1)
 EXTRA_sp_DEPENDENCIES = Enclave.signed.so
 mrsigner_SOURCES = mrsigner.cpp crypto.c hexutil.c
