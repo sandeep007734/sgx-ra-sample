@@ -109,11 +109,16 @@ fi
 
 if [ "$PROG" = "run-client" ]
 then
-	./client \
+	echo ./client \
 		-s $SPID \
 		$cl_nonce $cl_pse \
 		$flag_linkable $flag_debug $flag_verbose \
 		"$@"
+	# ./client \
+	# 	-s $SPID \
+	# 	$cl_nonce $cl_pse \
+	# 	$flag_linkable $flag_debug $flag_verbose \
+	# 	"$@"
 elif [ "$PROG" = "run-server" ]
 then
 	./sp \

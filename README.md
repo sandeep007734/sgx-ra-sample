@@ -1,3 +1,11 @@
+# F-LaaS Implementation.
+
+The code has been modified to integrate PCL into it. Following items will be added to it:  
+* PCL Code
+* Timer statstics
+* VTune statistics.
+* This will be made automatic to support any current SGX application
+
 # Intel&reg; Software Guard Extensions (SGX) Remote Attestation End-to-End Sample
 
 * [Introduction](#intro)
